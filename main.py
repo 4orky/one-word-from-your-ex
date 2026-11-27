@@ -1,108 +1,181 @@
-# One Word From Your Ex — make.fun bounty
-# u-brave-eagle-12-one-word-from-your-ex-cfd97ba2
-#
-# The program writes exactly one word to /output/entry.txt: the word
-# the entrant's ex would use to describe them.
-#
-# Candidates were drafted against the judge's brief, in order of weight:
-#   1. exactly one word an ex would really say about a former partner
-#   2. makes the judge laugh out loud — surprise, a sharp turn
-#   3. stings with recognition — painfully true, and the entrant knows it
-#   4. lands instantly, no explanation needed, no synonym keeps the edge
-#   5. relatable — names something people have lived through too
-# Each candidate carries a hand-scored craft score (0-10 per criterion,
-# summed below); selection is deterministic: highest score wins, ties go
-# to the shorter word. The output is byte-identical on every run.
+"""One word from your ex.
 
-CANDIDATES = [
-    # "I was just practice." The whole relationship reframed in one word:
-    # the rehearsal before the real thing. Universal, instant, and it
-    # stings because the entrant plainly knows it.
-    # score: ex-word 10, laugh 9, sting 10, instant 10, relatable 10 = 49
-    ("Practice", 49),
-    # "I was the prototype." The test version; the next one got the
-    # finished product. Sharp turn, tech-flavoured, self-deprecating.
-    # score: ex-word 9, laugh 9, sting 9, instant 9, relatable 8 = 44
-    ("Prototype", 44),
-    # "I was the intern." Temporary, unpaid, learning on the job,
-    # replaced by the full-time hire. Funny image, real sting.
-    # score: ex-word 9, laugh 9, sting 8, instant 8, relatable 8 = 42
-    ("Intern", 42),
-    # "I was the warmup." The act before the main event. Short, punchy,
-    # instantly understood — but a touch more sports-metaphor than story.
-    # score: ex-word 8, laugh 8, sting 8, instant 9, relatable 8 = 41
-    ("Warmup", 41),
-    # "I was the understudy." Never got the lead role. Theatrical and
-    # sad-funny, but needs half a second more than the top picks.
-    # score: ex-word 9, laugh 8, sting 8, instant 7, relatable 7 = 39
-    ("Understudy", 39),
-    # "I was a draft." A rough draft of a boyfriend. Clean and funny,
-    # but "draft" alone is a little too easy to read as unfinished work.
-    # score: ex-word 8, laugh 7, sting 8, instant 8, relatable 7 = 38
-    ("Draft", 38),
-    # "I was archived." Filed away like an old email. Modern and wry,
-    # but colder than the top picks — less sting, more shrug.
-    # score: ex-word 8, laugh 7, sting 7, instant 8, relatable 7 = 37
-    ("Archived", 37),
-]
+The brief asks for exactly one word: the word your ex would use to
+describe you. A judge reads entries two at a time and keeps the
+funniest, most painfully honest word, weighing these in order:
+
+    1. it is really a word an ex would say about a former partner
+    2. it makes the judge laugh out loud, through surprise or a turn
+    3. it stings with recognition, because it is plainly true
+    4. it lands instantly, needing no explanation at all
+    5. it is relatable, naming something people have lived through
+
+Twelve words were drafted by hand and marked 0-10 on each point above.
+The winner is the highest total, with a tie going to the shorter word.
+This program writes the winner, and nothing else, to /output/entry.txt.
+"""
+
+import os
+import re
+
+OUTPUT_DIR = "/output"
+ENTRY_PATH = os.path.join(OUTPUT_DIR, "entry.txt")
+STAGING_PATH = os.path.join(OUTPUT_DIR, ".entry.tmp")
+
+WORD_PATTERN = re.compile(r"[A-Za-z]+")
+
+# Marks are (believable, funny, sting, instant, relatable), each out of 10.
+# Listed weakest first, so the winner closes the list.
+ENTRIES = (
+    {
+        "word": "Detour",
+        "why": "A scenic route that went nowhere. Cute image, but it reads "
+               "more like a travel complaint than a verdict on a person.",
+        "marks": (7, 8, 7, 7, 7),
+    },
+    {
+        "word": "Archived",
+        "why": "Filed away like an old email thread. Modern and wry, yet "
+               "cooler than the best picks: more shrug than sting.",
+        "marks": (8, 7, 7, 8, 7),
+    },
+    {
+        "word": "Draft",
+        "why": "A rough draft of a boyfriend. Clean and funny, but on its "
+               "own it leans too hard on unfinished work to carry the joke.",
+        "marks": (8, 7, 8, 8, 7),
+    },
+    {
+        "word": "Backup",
+        "why": "Kept around in case the first choice fell through. Honest "
+               "and relatable, though it sounds more practical than funny.",
+        "marks": (8, 7, 7, 8, 8),
+    },
+    {
+        "word": "Trial",
+        "why": "A trial run, thirty days and then the subscription lapsed. "
+               "Short and clear, but it loses the human sting of the top pick.",
+        "marks": (7, 7, 8, 9, 8),
+    },
+    {
+        "word": "Understudy",
+        "why": "Never got the lead role. Theatrical and sad-funny, but it "
+               "asks for half a second more thought than the winner does.",
+        "marks": (9, 8, 8, 7, 7),
+    },
+    {
+        "word": "Rehearsal",
+        "why": "The run-through before opening night. Close cousin of the "
+               "winner, yet it belongs to the stage, not the relationship.",
+        "marks": (8, 8, 8, 8, 8),
+    },
+    {
+        "word": "Warmup",
+        "why": "The act before the main event. Punchy and instantly "
+               "understood, but it leans on a sports metaphor, not a story.",
+        "marks": (8, 8, 8, 9, 8),
+    },
+    {
+        "word": "Intern",
+        "why": "Temporary, unpaid, learning on the job, replaced by the "
+               "full-time hire. A funny image with a real sting in it.",
+        "marks": (9, 9, 8, 8, 8),
+    },
+    {
+        "word": "Placeholder",
+        "why": "Holding the seat until the real thing arrived. Painfully "
+               "accurate, though a touch clinical for a laugh-out-loud word.",
+        "marks": (9, 8, 9, 8, 8),
+    },
+    {
+        "word": "Prototype",
+        "why": "The test version; the next one got the finished product. "
+               "Sharp, tech-flavoured and self-deprecating, a close second.",
+        "marks": (9, 9, 9, 9, 8),
+    },
+    {
+        "word": "Practice",
+        "why": "I was just practice. The whole relationship reframed in a "
+               "single word: the rehearsal before the real thing. Universal, "
+               "instant, and it stings because the entrant plainly knows it.",
+        "marks": (10, 9, 10, 10, 10),
+    },
+)
 
 
-def validate_gate(word):
-    """Mirror the sealed gate exactly: UTF-8 text, 1-24 characters,
-    not only white space, and exactly one word."""
-    assert isinstance(word, str), "entry must be text"
-    word.encode("utf-8")  # must be encodable UTF-8
-    assert 1 <= len(word) <= 24, f"gate: length {len(word)} outside 1-24"
-    assert word.strip(), "gate: entry is only white space"
-    assert word == word.strip(), "gate: entry has surrounding white space"
-    assert " " not in word and "\n" not in word and "\t" not in word, \
-        "gate: entry must be exactly one word"
-    assert word.isalpha(), "gate: entry must be a plain word"
-    return word
+def check_marks(entry):
+    """Check one candidate's marks: exactly five whole numbers, each 0-10.
+    A typo in a score tuple must fail loudly instead of skewing the pick."""
+    marks = entry["marks"]
+    if len(marks) != 5:
+        raise ValueError("%s must carry five marks, got %d"
+                         % (entry["word"], len(marks)))
+    for mark in marks:
+        if not isinstance(mark, int) or isinstance(mark, bool):
+            raise TypeError("%s has a non-integer mark: %r"
+                            % (entry["word"], mark))
+        if not 0 <= mark <= 10:
+            raise ValueError("%s has a mark outside 0-10: %d"
+                             % (entry["word"], mark))
+    return entry
 
 
-def pick(candidates):
-    best = None
-    for word, score in candidates:
-        validate_gate(word)
-        key = (score, -len(word))  # highest score, then shortest
-        if best is None or key > best[0]:
-            best = (key, word)
-    return best[1]
+def total_marks(entry):
+    """Add up one candidate's five marks."""
+    return sum(check_marks(entry)["marks"])
 
 
-def write_entry(word, attempts=3):
-    """Write the entry with retries: a transient write failure must not
-    leave a missing or partial file behind for the gate to read."""
-    import os
-    os.makedirs("/output", exist_ok=True)
-    last_error = None
-    for attempt in range(1, attempts + 1):
-        try:
-            with open("/output/entry.txt", "w", encoding="utf-8") as f:
-                f.write(word)
-            # The scorer collects outputs as another user, so the file
-            # must be readable by everyone (mode 0644).
-            os.chmod("/output/entry.txt", 0o644)
-            with open("/output/entry.txt", encoding="utf-8") as f:
-                written = f.read()
-            validate_gate(written)
-            assert written == word, "entry.txt differs from the chosen word"
-            return written
-        except (OSError, AssertionError) as e:
-            last_error = e
-            if attempt == attempts:
-                raise
-    raise last_error  # pragma: no cover - loop always returns or raises
+def check_entry(text):
+    """Check one word against the sealed gate: UTF-8 text, 1-24
+    characters, not only whitespace, and exactly one plain word."""
+    if not isinstance(text, str):
+        raise TypeError("entry must be text, got %s" % type(text).__name__)
+    text.encode("utf-8")
+    if not 1 <= len(text) <= 24:
+        raise ValueError("entry length %d is outside 1-24" % len(text))
+    if not text.strip():
+        raise ValueError("entry is only whitespace")
+    if text != text.strip():
+        raise ValueError("entry has surrounding whitespace")
+    if WORD_PATTERN.fullmatch(text) is None:
+        raise ValueError("entry must be a single plain word")
+    return text
 
 
-def main():
-    word = pick(CANDIDATES)
-    written = write_entry(word)
-    # Final read-back: the gate reads this file, not stdout.
-    assert written == word
-    print(word)
+def choose(entries):
+    """Return the winning word: highest total marks, ties to the shorter."""
+    for entry in entries:
+        check_entry(entry["word"])
+    winner = max(entries, key=lambda e: (total_marks(e), -len(e["word"])))
+    return winner["word"]
 
 
-if __name__ == "__main__":
-    main()
+def publish(word):
+    """Write the word to the entry file via a staging file, so a failure
+    mid-write can never leave a partial entry behind for the gate."""
+    check_entry(word)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(STAGING_PATH, "w", encoding="utf-8") as handle:
+        handle.write(word)
+    os.chmod(STAGING_PATH, 0o644)
+    os.replace(STAGING_PATH, ENTRY_PATH)
+    with open(ENTRY_PATH, encoding="utf-8") as handle:
+        stored = handle.read()
+    check_entry(stored)
+    if stored != word:
+        raise ValueError("entry file does not match the chosen word")
+    return stored
+
+
+def run():
+    chosen = choose(ENTRIES)
+    stored = publish(chosen)
+    if stored != chosen:
+        raise ValueError("stored entry differs from the chosen word")
+    print(chosen)
+    return 0
+
+
+_RUN_AS_SCRIPT = __name__ == "__main__"
+if _RUN_AS_SCRIPT:
+    raise SystemExit(run())
